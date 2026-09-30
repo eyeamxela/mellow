@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>mellow — store</title>
+<script>window.addEventListener('error', function(e){ console.error('ERR', e.message, e.filename, e.lineno, e.error && e.error.stack); }, true);
+window.addEventListener('unhandledrejection', function(e){ console.error('REJ', e.reason && (e.reason.message + ' | ' + e.reason.stack)); });</script>
+<link rel="stylesheet" href="/styles.css">
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone@7.24.7/babel.min.js"></script>
+<script src="/ds-fallback.js"></script>
+<script src="data.js"></script>
+<style>
+  html, body { margin: 0; height: 100%; background: var(--paper); }
+  #root { height: 100%; }
+  ::-webkit-scrollbar { width: 0; height: 0; }
+.mellow-marquee { animation: mellowmarquee 30s linear infinite; }
+  @keyframes mellowmarquee { from { transform: translateX(0); } to { transform: translateX(-33.33%); } }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel" src="storefront.jsx"></script>
+<script type="text/babel">
+window.loadMellowDS("../..").then(() => {
+  ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(window.MellowStorefront));
+});
+</script>
+</body>
+</html>

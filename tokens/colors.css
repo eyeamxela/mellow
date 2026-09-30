@@ -1,0 +1,20 @@
+:root {
+  /* base */
+  --ink: #141414;            /* near-black, sampled from slide glyphs (#181818) */
+  --paper: #ffffff;
+  --gray-hairline: #c8c8c8;  /* structural rules */
+  --gray-muted: #a3a3a3;     /* prices, secondary meta */
+  --gray-soft: #f2f2f2;      /* rare: subtle fills (thumbnail wells) */
+  --moss: #4e7a3a;           /* single chromatic signal — low stock only */
+
+  /* semantic */
+  --text-body: var(--ink);
+  --text-muted: var(--gray-muted);
+  --text-inverse: var(--paper);
+  --surface-page: var(--paper);
+  --surface-inverse: var(--ink);
+  --surface-media: var(--ink);      /* empty video slots render solid ink */
+  --border-rule: var(--gray-hairline);
+  --border-control: var(--ink);     /* inputs, size cells, boxed controls */
+  --signal-stock: var(--moss);
+}

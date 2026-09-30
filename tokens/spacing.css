@@ -1,0 +1,27 @@
+:root {
+  /* 4px base */
+  --space-0: 2px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+
+  /* rules & boxes — everything is 1px, square corners, no shadows */
+  --rule-w: 1px;
+  --rule: var(--rule-w) solid var(--border-rule);
+  --control-border: var(--rule-w) solid var(--border-control);
+  --radius: 0px;
+
+  /* layout */
+  --nav-h: 64px;
+  --split-left: 38.4%;     /* left info panel vs right scroll panel (from slides: 786/2048) */
+  --page-pad: 20px;
+  --grid-gap: var(--space-5);
+
+  /* motion: state changes are hard cuts (image swap, invert). No easing. */
+  --motion: 0ms;
+}

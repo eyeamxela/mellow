@@ -1,0 +1,5 @@
+/* Webfonts.
+   Courier Prime = closest Google Fonts match to the Courier-style mono used across the slides.
+   Pirata One    = closest Google Fonts match to the Old English blackletter of the "mellow" wordmark
+                   (real wordmark ships as assets/logo-mellow.png — prefer the asset for the logo itself). */
+@import url('https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400&family=Pirata+One&display=swap');

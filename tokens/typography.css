@@ -1,0 +1,24 @@
+:root {
+  --font-mono: 'Courier Prime', 'Courier New', Courier, monospace;
+  --font-blackletter: 'Pirata One', 'Old English Text MT', 'Cloister Black', serif;
+  --font-utility: 'Helvetica Neue', Helvetica, Arial, sans-serif; /* map coords, MRG sub-wordmark only */
+
+  /* scale (desktop 1440 reference) */
+  --text-2xs: 10px;   /* product meta, footer links, size-chart cells */
+  --text-xs: 11px;    /* buttons, inputs, filter options */
+  --text-sm: 13px;    /* body copy, accordions */
+  --text-base: 14px;  /* PDP copy, magazine copy */
+  --text-md: 16px;    /* nav links, FILTER / VIEW controls */
+  --text-lg: 20px;    /* page-level statements (LOGIN TO VOTE, coords) */
+  --text-xl: 26px;    /* $20K figures, blackletter nav "home" */
+  --text-display: 34px;  /* prize-purse style statements */
+  --logo-size-nav: 44px; /* blackletter wordmark in the nav */
+
+  --tracking-caps: 0.05em;
+  --tracking-wide: 0.12em;
+  --leading-tight: 1.15;
+  --leading-body: 1.6;   /* Courier body copy is airy */
+
+  --weight-regular: 400;
+  --weight-bold: 700;
+}
