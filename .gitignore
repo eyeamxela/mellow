@@ -1,4 +1,6 @@
 .vercel/
 .DS_Store
+# The judging workspace has its own private Git repository.
+rock-games-admin/
 .vercel
 .env*

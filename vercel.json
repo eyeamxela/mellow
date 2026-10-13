@@ -7,9 +7,123 @@
       "headers": [
         {
           "key": "Cache-Control",
-          "value": "public, max-age=3600"
+          "value": "public, max-age=300"
+        },
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
         }
       ]
+    }
+  ],
+  "redirects": [
+    {
+      "source": "/index",
+      "destination": "/#home",
+      "permanent": false
+    },
+    {
+      "source": "/index.html",
+      "destination": "/#home",
+      "permanent": false
+    },
+    {
+      "source": "/shop",
+      "destination": "/#shop",
+      "permanent": false
+    },
+    {
+      "source": "/shop.html",
+      "destination": "/#shop",
+      "permanent": false
+    },
+    {
+      "source": "/store",
+      "destination": "/#shop",
+      "permanent": false
+    },
+    {
+      "source": "/store.html",
+      "destination": "/#shop",
+      "permanent": false
+    },
+    {
+      "source": "/product",
+      "destination": "/#product",
+      "permanent": false
+    },
+    {
+      "source": "/product.html",
+      "destination": "/#product",
+      "permanent": false
+    },
+    {
+      "source": "/magazine",
+      "destination": "/#magazine",
+      "permanent": false
+    },
+    {
+      "source": "/magazine.html",
+      "destination": "/#magazine",
+      "permanent": false
+    },
+    {
+      "source": "/issue",
+      "destination": "/#issue",
+      "permanent": false
+    },
+    {
+      "source": "/issue.html",
+      "destination": "/#issue",
+      "permanent": false
+    },
+    {
+      "source": "/rockgames",
+      "destination": "/#rockgames",
+      "permanent": false
+    },
+    {
+      "source": "/rockgames.html",
+      "destination": "/#rockgames",
+      "permanent": false
+    },
+    {
+      "source": "/about",
+      "destination": "/#about",
+      "permanent": false
+    },
+    {
+      "source": "/about.html",
+      "destination": "/#about",
+      "permanent": false
+    },
+    {
+      "source": "/youtube",
+      "destination": "/#youtube",
+      "permanent": false
+    },
+    {
+      "source": "/youtube.html",
+      "destination": "/#youtube",
+      "permanent": false
+    },
+    {
+      "source": "/coords",
+      "destination": "/#coords",
+      "permanent": false
+    },
+    {
+      "source": "/coords.html",
+      "destination": "/#coords",
+      "permanent": false
     }
   ]
 }

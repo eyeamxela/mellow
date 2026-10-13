@@ -1,0 +1,5 @@
+# The latest public export embeds every asset. Only these two files are public.
+# Private backend source, databases, documentation and old exports stay excluded.
+*
+!index.html
+!vercel.json
