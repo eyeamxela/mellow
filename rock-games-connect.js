@@ -302,10 +302,11 @@
       return f ? f.n : 1;
     });
     const [feedPage, setFeedPage] = React.useState(0);
-    const [playing, setPlaying] = React.useState(false);
     const [tape, setTape] = React.useState('');
     const [editing, setEditing] = React.useState(false);
     const [preview, setPreview] = React.useState(null);
+    const playing = !!preview;
+    const playChannel = channel => setPreview(channel.src ? {source: channel.src, key: crypto.randomUUID(), label: channel.title || channel.callsign} : null);
     const [previewError, setPreviewError] = React.useState('');
     const editField = (setter, value) => { setEditing(true); setter(value); };
     const [callsign, setCallsign] = React.useState('');
@@ -392,7 +393,7 @@
         const result = await response.json();
         if (!response.ok) throw new Error(result.error || 'Your film was not received. Try again.');
         commit(channels.map(c => c.n === nextSlot.n ? {n: c.n, callsign: callsign.toUpperCase().slice(0, 12), title: filmTitle.trim(), src: parsed} : c));
-        setActive(nextSlot.n); setFeedPage(Math.floor((nextSlot.n - 1) / PAGE_SIZE)); setPlaying(false);
+        setActive(nextSlot.n); setFeedPage(Math.floor((nextSlot.n - 1) / PAGE_SIZE));
         setPreview(null); setPreviewError('');
         setTape(''); setCallsign(''); setEmail(''); setFilmTitle(''); setDuration(''); setConsent(false);
         pending.current = null;
@@ -406,13 +407,13 @@
       React.createElement('span', {style: lbl({fontSize: 7})}, label),
       React.createElement('input', {value, onChange: e => editField(change, e.target.value), disabled: busy, style: fieldStyle, ...props}));
     const eject = () => {
-      if (ch.demo) { setPlaying(false); return; }
+      if (ch.demo) { setPreview(null); return; }
       commit(channels.map(c => c.n === active ? {
         n: c.n,
         callsign: null,
         src: null
       } : c));
-      setPlaying(false);
+      setPreview(null);
     };
     const vote = () => {
       if (voted || !ch.src) return;
@@ -421,32 +422,8 @@
       } catch (e) {}
       setVoted(String(ch.n));
     };
-    const screenBody = playing && ch.src ? ch.src.type === 'file' ? /*#__PURE__*/React.createElement("video", {
-      controls: true,
-      autoPlay: true,
-      src: ch.src.src,
-      style: {
-        width: '100%',
-        height: '100%',
-        objectFit: 'contain',
-        display: 'block',
-        position: 'relative',
-        zIndex: 0
-      }
-    }) : /*#__PURE__*/React.createElement("iframe", {
-      key: active,
-      src: ch.src.embed,
-      title: 'CH ' + ch.n,
-      frameBorder: "0",
-      allow: "autoplay; encrypted-media; fullscreen",
-      allowFullScreen: true,
-      style: {
-        width: '100%',
-        height: '100%',
-        border: 'none',
-        display: 'block'
-      }
-    }) : /*#__PURE__*/React.createElement("div", {
+    // The main screen is reserved for the background broadcast.
+    const screenBody = /*#__PURE__*/React.createElement("div", {
       style: {
         position: 'absolute',
         inset: 0
@@ -471,7 +448,7 @@
         color: C.crt,
         textShadow: '0 0 6px rgba(169,192,214,0.8)'
       }
-    }, ch.src ? 'STANDBY \u00b7 CH ' + String(active).padStart(2, '0') : 'NO TAPE \u00b7 CH ' + String(active).padStart(2, '0')));
+    }, 'BROADCAST STANDBY'));
     return /*#__PURE__*/React.createElement("div", {
       "data-m": "console-pad",
       className: "rg-tv-connected",
@@ -578,11 +555,11 @@
     }, /*#__PURE__*/React.createElement(Key, {
       wide: true,
       on: playing && !!ch.src,
-      onClick: () => ch.src && setPlaying(true)
+      onClick: () => playChannel(ch)
     }, '\u25b8', " PLAY"), /*#__PURE__*/React.createElement(Key, {
       wide: true,
       on: !playing,
-      onClick: () => setPlaying(false)
+      onClick: () => setPreview(null)
     }, '\u25a0', " STOP"), /*#__PURE__*/React.createElement(Key, {
       wide: true,
       dim: !ch.src,
@@ -692,8 +669,7 @@
       title: c.demo ? c.title + ' · Fictional demo / shared sample footage' : c.title || 'Empty channel',
       onClick: () => {
         setActive(c.n);
-        setPlaying(!!c.src);
-        setPreview(null);
+        playChannel(c);
       },
       style: {
         display: 'flex',
@@ -796,7 +772,7 @@
       style: lbl({
         fontSize: 7
       })
-    }, "TAPE PREVIEW"), /*#__PURE__*/React.createElement(Bezel, {
+    }, preview?.label ? "APPLICANT · " + preview.label : "TAPE PREVIEW"), /*#__PURE__*/React.createElement(Bezel, {
       pad: 8
     }, /*#__PURE__*/React.createElement(Glass, {
       radius: 10
@@ -810,7 +786,10 @@
         position: 'absolute',
         inset: 0
       }
-    }, preview && /*#__PURE__*/React.createElement("iframe", {
+    }, preview && (preview.source.type === 'file' ? React.createElement('video', {
+      key: preview.key, src: preview.source.src, controls: true, autoPlay: true,
+      style: {width: '100%', height: '100%', objectFit: 'contain'}
+    }) : /*#__PURE__*/React.createElement("iframe", {
       key: preview.key,
       src: preview.source.embed,
       title: "tape preview",
@@ -820,7 +799,7 @@
       style: {
         width: '100%', height: '100%', border: 'none', display: 'block'
       }
-    }), !preview && /*#__PURE__*/React.createElement("span", {
+    })), !preview && /*#__PURE__*/React.createElement("span", {
       style: {
         position: 'absolute',
         inset: 0,
@@ -839,12 +818,12 @@
         alignItems: 'center'
       }
     }, /*#__PURE__*/React.createElement(Led, {
-      on: !!parsed
+      on: !!preview || !!parsed
     }), " ", /*#__PURE__*/React.createElement("span", {
       style: lbl({
         fontSize: 7
       })
-    }, parsed ? 'SIGNAL VERIFIED' : 'AWAITING SIGNAL'))), /*#__PURE__*/React.createElement("div", {
+    }, preview ? 'PLAYING ON LOWER SCREEN' : parsed ? 'SIGNAL VERIFIED' : 'AWAITING SIGNAL'))), /*#__PURE__*/React.createElement("div", {
       style: {
         display: 'flex',
         flexDirection: 'column',
