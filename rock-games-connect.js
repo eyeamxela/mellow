@@ -423,33 +423,15 @@
       } catch (e) {}
       setVoted(String(ch.n));
     };
-    // The main screen is reserved for the background broadcast.
-    const screenBody = /*#__PURE__*/React.createElement("div", {
-      style: {
-        position: 'absolute',
-        inset: 0
-      }
-    }, /*#__PURE__*/React.createElement("div", {
-      className: "crt-static",
-      style: {
-        position: 'absolute',
-        inset: 0,
-        opacity: 0.45
-      }
-    }), /*#__PURE__*/React.createElement("span", {
-      style: {
-        position: 'absolute',
-        top: '46%',
-        left: 0,
-        right: 0,
-        textAlign: 'center',
-        fontFamily: 'var(--font-mono)',
-        fontSize: 12,
-        letterSpacing: '0.34em',
-        color: C.crt,
-        textShadow: '0 0 6px rgba(169,192,214,0.8)'
-      }
-    }, 'BROADCAST STANDBY'));
+    // Independent background broadcast; applicant selection only changes the lower player.
+    const screenBody = React.createElement('iframe', {
+      src: 'https://www.youtube.com/embed/Eg1F9fT_70Q?autoplay=1&mute=1&start=160&loop=1&playlist=Eg1F9fT_70Q&playsinline=1&controls=0&rel=0',
+      title: 'Mellow background broadcast',
+      allow: 'autoplay; encrypted-media; fullscreen; picture-in-picture',
+      allowFullScreen: true,
+      referrerPolicy: 'strict-origin-when-cross-origin',
+      style: {width: '100%', height: '100%', border: 0, display: 'block'}
+    });
     return /*#__PURE__*/React.createElement("div", {
       "data-m": "console-pad",
       className: "rg-tv-connected",
