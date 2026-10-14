@@ -458,6 +458,45 @@
       referrerPolicy: 'strict-origin-when-cross-origin',
       style: {width: '100%', height: '100%', border: 0, display: 'block'}
     });
+    const applicantControls = /*#__PURE__*/React.createElement("div", {
+      role: "group",
+      "aria-label": "Applicant video controls",
+      style: {
+        display: 'flex',
+        gap: 6,
+        alignItems: 'center',
+        flexWrap: 'wrap'
+      }
+    }, /*#__PURE__*/React.createElement(Key, {
+      wide: true,
+      on: playing && !!ch.src,
+      onClick: () => playChannel(ch)
+    }, '\u25b8', " PLAY"), /*#__PURE__*/React.createElement(Key, {
+      wide: true,
+      on: !playing,
+      onClick: () => setPreview(null)
+    }, '\u25a0', " STOP"), /*#__PURE__*/React.createElement(Key, {
+      wide: true,
+      dim: !ch.src,
+      onClick: eject
+    }, '\u23cf', " EJECT"), /*#__PURE__*/React.createElement("span", {
+      style: {
+        display: 'inline-flex',
+        gap: 5,
+        alignItems: 'center',
+        marginLeft: 'auto',
+        minWidth: 0
+      }
+    }, /*#__PURE__*/React.createElement(Led, {
+      on: !!ch.src && playing
+    }), " ", /*#__PURE__*/React.createElement("span", {
+      style: lbl()
+    }, "LOCK"), /*#__PURE__*/React.createElement(Led, {
+      on: !!ch.src && !playing,
+      color: C.amber
+    }), " ", /*#__PURE__*/React.createElement("span", {
+      style: lbl()
+    }, "STBY")));
     return /*#__PURE__*/React.createElement("div", {
       "data-m": "console-pad",
       className: "rg-tv-connected",
@@ -554,43 +593,7 @@
         width: '100%',
         display: 'flex'
       }
-    }, /*#__PURE__*/React.createElement(Glass, null, screenBody))), /*#__PURE__*/React.createElement(Ruler, null), /*#__PURE__*/React.createElement("div", {
-      style: {
-        display: 'flex',
-        gap: 6,
-        alignItems: 'center',
-        flexWrap: 'wrap'
-      }
-    }, /*#__PURE__*/React.createElement(Key, {
-      wide: true,
-      on: playing && !!ch.src,
-      onClick: () => playChannel(ch)
-    }, '\u25b8', " PLAY"), /*#__PURE__*/React.createElement(Key, {
-      wide: true,
-      on: !playing,
-      onClick: () => setPreview(null)
-    }, '\u25a0', " STOP"), /*#__PURE__*/React.createElement(Key, {
-      wide: true,
-      dim: !ch.src,
-      onClick: eject
-    }, '\u23cf', " EJECT"), /*#__PURE__*/React.createElement("span", {
-      style: {
-        display: 'inline-flex',
-        gap: 5,
-        alignItems: 'center',
-        marginLeft: 'auto',
-        minWidth: 0
-      }
-    }, /*#__PURE__*/React.createElement(Led, {
-      on: !!ch.src && playing
-    }), " ", /*#__PURE__*/React.createElement("span", {
-      style: lbl()
-    }, "LOCK"), /*#__PURE__*/React.createElement(Led, {
-      on: !!ch.src && !playing,
-      color: C.amber
-    }), " ", /*#__PURE__*/React.createElement("span", {
-      style: lbl()
-    }, "STBY")))), /*#__PURE__*/React.createElement("div", {
+    }, /*#__PURE__*/React.createElement(Glass, null, screenBody))), /*#__PURE__*/React.createElement(Ruler, null)), /*#__PURE__*/React.createElement("div", {
       style: {
         flex: '1 1 250px',
         minWidth: 250,
@@ -821,7 +824,7 @@
         letterSpacing: '0.3em',
         color: C.crt
       }
-    }, parsed ? "PRESS ENTER TO PLAY" : "PREVIEW")))), /*#__PURE__*/React.createElement("div", {
+    }, parsed ? "PRESS ENTER TO PLAY" : "PREVIEW")))), applicantControls, /*#__PURE__*/React.createElement("div", {
       style: {
         display: 'flex',
         gap: 5,
