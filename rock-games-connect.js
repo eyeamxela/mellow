@@ -55,22 +55,26 @@
     } catch { return null; }
   }
 
-  const STORE = 'mellow-mrg-console-channels';
-  const VOTE = 'mellow-mrg-console-vote';
+  // Public, fictional demo metadata only. No applicant emails, scores or judge data.
+  const DEMO_FILMS = ["Granite Afterglow", "Low Gravity", "The Quiet Send", "Moss and Motion", "A Different Beta", "Last Light Club", "Beyond the Crux", "Skin in the Game", "Weather Window", "Small Holds Big Dreams", "The Long Approach", "One More Burn", "Above the Pines", "Valley of Stone", "Rest Day Rebels", "Chalk Lines", "Pocket Universe", "Cold Rock Warm Hands", "The Good Friction", "Finding the Edge", "Evening Sessions", "The Unfinished Line", "Wild Exposure", "Softer Landings", "Through the Roof", "No Easy Way", "Dust and Daylight", "The Great Traverse", "Thin Air Stories", "Between Two Boulders", "Back to the Block", "Under the Overhang", "Trail to Tomorrow", "Project Season", "Friction Theory", "Rock Paper Patience", "The Send Forecast", "Campfire Beta", "Hands on Granite", "Against the Grain", "A Little Further", "Nightfall Sessions", "The Other Side", "Ridge Walkers", "Off the Ground", "Gravity Optional", "Waiting for Winter", "Open Air Cinema", "The Next Attempt", "Home Before Dark"];
+  const PAGE_SIZE = 12;
+  const STORE = 'mellow-mrg-console-channels-v2';
+  const VOTE = 'mellow-mrg-console-vote-v2';
   function loadChannels() {
-    const base = Array.from({
-      length: 12
-    }, (_, i) => ({
-      n: i + 1,
-      callsign: null,
-      src: null
-    }));
+    let saved = [];
     try {
-      const saved = JSON.parse(localStorage.getItem(STORE) || '[]');
-      saved.forEach(s => {
-        if (s && s.n >= 1 && s.n <= 12) base[s.n - 1] = s;
-      });
-    } catch (e) {}
+      const current = localStorage.getItem(STORE);
+      saved = current === null
+        ? JSON.parse(localStorage.getItem('mellow-mrg-console-channels') || '[]').map(c => ({...c, n: c.n + DEMO_FILMS.length}))
+        : JSON.parse(current);
+      saved = saved.filter(c => Number.isInteger(c.n) && c.n > DEMO_FILMS.length && c.n <= 1000 && c.src);
+    } catch { saved = []; }
+    const capacity = Math.ceil((Math.max(DEMO_FILMS.length, ...saved.map(c => c.n)) + 1) / PAGE_SIZE) * PAGE_SIZE;
+    const base = Array.from({length: capacity}, (_, i) => ({n: i + 1, callsign: null, src: null}));
+    DEMO_FILMS.forEach((title, i) => {
+      base[i] = {n: i + 1, title, callsign: 'CREW ' + String(i + 1).padStart(2, '0'), demo: true, src: parseSource('https://youtu.be/aqz-KE-bpKQ')};
+    });
+    saved.forEach(c => { base[c.n - 1] = {n: c.n, callsign: c.callsign, title: c.title, src: c.src}; });
     return base;
   }
 
@@ -297,6 +301,7 @@
       const f = c.find(x => x.src);
       return f ? f.n : 1;
     });
+    const [feedPage, setFeedPage] = React.useState(0);
     const [playing, setPlaying] = React.useState(false);
     const [tape, setTape] = React.useState('');
     const [editing, setEditing] = React.useState(false);
@@ -363,10 +368,13 @@
       setPreview({source: parsed, key: crypto.randomUUID()});
     };
     const filled = channels.filter(c => c.src);
+    const pageCount = Math.ceil(channels.length / PAGE_SIZE);
+    const visibleChannels = channels.slice(feedPage * PAGE_SIZE, (feedPage + 1) * PAGE_SIZE);
     const commit = list => {
+      if (!list.some(c => !c.src)) list = list.concat(Array.from({length: PAGE_SIZE}, (_, i) => ({n: list.length + i + 1, callsign: null, src: null})));
       setChannels(list);
       try {
-        localStorage.setItem(STORE, JSON.stringify(list.filter(c => c.src)));
+        localStorage.setItem(STORE, JSON.stringify(list.filter(c => c.src && !c.demo)));
       } catch (e) {}
     };
     const loadTape = async () => {
@@ -383,8 +391,8 @@
         });
         const result = await response.json();
         if (!response.ok) throw new Error(result.error || 'Your film was not received. Try again.');
-        commit(channels.map(c => c.n === nextSlot.n ? {n: c.n, callsign: callsign.toUpperCase().slice(0, 12), src: parsed} : c));
-        setActive(nextSlot.n); setPlaying(false);
+        commit(channels.map(c => c.n === nextSlot.n ? {n: c.n, callsign: callsign.toUpperCase().slice(0, 12), title: filmTitle.trim(), src: parsed} : c));
+        setActive(nextSlot.n); setFeedPage(Math.floor((nextSlot.n - 1) / PAGE_SIZE)); setPlaying(false);
         setPreview(null); setPreviewError('');
         setTape(''); setCallsign(''); setEmail(''); setFilmTitle(''); setDuration(''); setConsent(false);
         pending.current = null;
@@ -398,6 +406,7 @@
       React.createElement('span', {style: lbl({fontSize: 7})}, label),
       React.createElement('input', {value, onChange: e => editField(change, e.target.value), disabled: busy, style: fieldStyle, ...props}));
     const eject = () => {
+      if (ch.demo) { setPlaying(false); return; }
       commit(channels.map(c => c.n === active ? {
         n: c.n,
         callsign: null,
@@ -425,6 +434,7 @@
         zIndex: 0
       }
     }) : /*#__PURE__*/React.createElement("iframe", {
+      key: active,
       src: ch.src.embed,
       title: 'CH ' + ch.n,
       frameBorder: "0",
@@ -631,7 +641,7 @@
         inset: 0,
         background: 'repeating-linear-gradient(0deg, rgba(169,192,214,0.13) 0 1px, transparent 1px 12px), repeating-linear-gradient(90deg, rgba(169,192,214,0.13) 0 1px, transparent 1px 14px)'
       }
-    }), channels.map(c => /*#__PURE__*/React.createElement("span", {
+    }), visibleChannels.map(c => /*#__PURE__*/React.createElement("span", {
       key: c.n,
       style: {
         flex: 1,
@@ -643,7 +653,7 @@
       style: lbl({
         fontSize: 7
       })
-    }, "SLOTS ", filled.length, "/12 \xB7 FREE ", 12 - filled.length)), /*#__PURE__*/React.createElement("div", {
+    }, "DEMO FILMS 50 · YOUR TAPES ", filled.filter(c => !c.demo).length)), /*#__PURE__*/React.createElement("div", {
       style: Object.assign({}, bevelIn, {
         background: C.chassis,
         padding: 8,
@@ -664,7 +674,7 @@
       style: lbl({
         fontSize: 7
       })
-    }, filled.length, "/12 LOADED")), /*#__PURE__*/React.createElement("div", {
+    }, filled.length, " LOADED · ", feedPage * PAGE_SIZE + 1, "–", Math.min((feedPage + 1) * PAGE_SIZE, channels.length))), /*#__PURE__*/React.createElement("div", {
       style: Object.assign({}, bevelIn, {
         background: C.screen,
         padding: 6,
@@ -674,17 +684,26 @@
         gap: '3px 10px',
         alignContent: 'start'
       })
-    }, channels.map(c => /*#__PURE__*/React.createElement("div", {
+    }, visibleChannels.map(c => /*#__PURE__*/React.createElement("button", {
       key: c.n,
+      type: 'button',
+      'aria-label': 'Channel ' + c.n + (c.src ? ': ' + c.callsign + ' — ' + (c.title || 'Your tape') : ': Empty'),
+      'aria-pressed': c.n === active,
+      title: c.demo ? c.title + ' · Fictional demo / shared sample footage' : c.title || 'Empty channel',
       onClick: () => {
         setActive(c.n);
-        setPlaying(false);
+        setPlaying(!!c.src);
+        setPreview(null);
       },
       style: {
         display: 'flex',
         justifyContent: 'space-between',
         gap: 6,
-        padding: '2px 4px',
+        padding: '5px 4px',
+        appearance: 'none',
+        border: 0,
+        textAlign: 'left',
+        minWidth: 0,
         cursor: 'pointer',
         fontFamily: 'var(--font-mono)',
         fontSize: 9,
@@ -699,11 +718,18 @@
         overflow: 'hidden',
         textOverflow: 'ellipsis'
       }
-    }, String(c.n).padStart(2, '0'), " ", c.callsign || '—'), /*#__PURE__*/React.createElement("span", {
+    }, String(c.n).padStart(2, '0'), " ", c.callsign || '—',
+      c.title && React.createElement('span', {style: {display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', marginTop: 3, fontSize: 8, opacity: .8}}, c.title)), /*#__PURE__*/React.createElement("span", {
       style: {
         flexShrink: 0
       }
-    }, voted === String(c.n) ? '●' : c.src ? '○' : '')))), /*#__PURE__*/React.createElement("div", {
+    }, voted === String(c.n) ? '●' : c.src ? '○' : '')))),
+    React.createElement('div', {style: {display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8}},
+      React.createElement(Key, {wide: true, disabled: feedPage === 0, onClick: () => setFeedPage(p => p - 1)}, '← PREV'),
+      React.createElement('span', {style: lbl({fontSize: 8})}, 'PAGE ' + (feedPage + 1) + ' / ' + pageCount),
+      React.createElement(Key, {wide: true, disabled: feedPage === pageCount - 1, onClick: () => setFeedPage(p => p + 1)}, 'NEXT →')
+    ), React.createElement('span', {style: lbl({fontSize: 7, whiteSpace: 'normal', lineHeight: 1.5})}, '50 FICTIONAL APPLICANTS · SHARED SAMPLE FOOTAGE'),
+    /*#__PURE__*/React.createElement("div", {
       style: {
         display: 'flex',
         gap: 8,
