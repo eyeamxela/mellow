@@ -55,6 +55,14 @@
     } catch { return null; }
   }
 
+  function parseDuration(raw) {
+    const value = raw.trim();
+    const clock = value.match(/^(\d{1,2}):([0-5]\d)$/);
+    if (clock) return Number(clock[1]) * 60 + Number(clock[2]);
+    const minutes = value.match(/^(\d{1,2})\s*(?:m|min|mins|minute|minutes)?$/i);
+    return minutes ? Number(minutes[1]) * 60 : null;
+  }
+
   // Public, fictional demo metadata only. No applicant emails, scores or judge data.
   const DEMO_FILMS = ["Granite Afterglow", "Low Gravity", "The Quiet Send", "Moss and Motion", "A Different Beta", "Last Light Club", "Beyond the Crux", "Skin in the Game", "Weather Window", "Small Holds Big Dreams", "The Long Approach", "One More Burn", "Above the Pines", "Valley of Stone", "Rest Day Rebels", "Chalk Lines", "Pocket Universe", "Cold Rock Warm Hands", "The Good Friction", "Finding the Edge", "Evening Sessions", "The Unfinished Line", "Wild Exposure", "Softer Landings", "Through the Roof", "No Easy Way", "Dust and Daylight", "The Great Traverse", "Thin Air Stories", "Between Two Boulders", "Back to the Block", "Under the Overhang", "Trail to Tomorrow", "Project Season", "Friction Theory", "Rock Paper Patience", "The Send Forecast", "Campfire Beta", "Hands on Granite", "Against the Grain", "A Little Further", "Nightfall Sessions", "The Other Side", "Ridge Walkers", "Off the Ground", "Gravity Optional", "Waiting for Winter", "Open Air Cinema", "The Next Attempt", "Home Before Dark"];
   const PAGE_SIZE = 12;
@@ -287,6 +295,7 @@
     const [filmTitle, setFilmTitle] = React.useState('');
     const [duration, setDuration] = React.useState('');
     const [consent, setConsent] = React.useState(false);
+    const [validationAttempted, setValidationAttempted] = React.useState(false);
     const [connectionError, setConnectionError] = React.useState('');
     async function connect() {
       try {
@@ -346,9 +355,19 @@
     const ch = channels[active - 1];
     const parsed = parseSource(tape);
     const nextSlot = channels.find(c => !c.src) || channels[active - 1];
-    const durationMatch = duration.match(/^(\d{1,2}):([0-5]\d)$/);
-    const durationSeconds = durationMatch ? Number(durationMatch[1]) * 60 + Number(durationMatch[2]) : 0;
-    const ready = !!parsed && !!filmTitle.trim() && !!callsign.trim() && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()) && durationSeconds >= 180 && durationSeconds <= 600 && consent && !!contest?.accepting && !busy;
+    const durationSeconds = parseDuration(duration);
+    const emailError = /^[^\s@]+@[^\s@/]+\.[^\s@/]+$/.test(email.trim()) ? '' : 'Enter a valid email, such as you@example.com. Use a dot in the domain, not a slash.';
+    const durationError = durationSeconds === null ? 'Enter minutes (5 or 5min) or MM:SS (5:00).' : durationSeconds < 180 || durationSeconds > 600 ? 'Film length must be between 3:00 and 10:00.' : '';
+    const validationErrors = [
+      !parsed && 'Add a valid YouTube link.',
+      !callsign.trim() && 'Add your team or callsign.',
+      emailError,
+      !filmTitle.trim() && 'Add a film title.',
+      durationError,
+      !consent && 'Confirm that you have permission to submit this film.'
+    ].filter(Boolean);
+    const availabilityError = connectionError ? 'Connection unavailable. Press RECONNECT, then try again.' : !contest ? 'Connecting to the judging room. Please try again in a moment.' : !contest.accepting ? 'This round is closed.' : '';
+    const ready = !validationErrors.length && !availabilityError && !busy;
     const liveLines = [
       'MRG ENTRY TERMINAL v1.0',
       '> YOUTUBE: ' + tape,
@@ -358,7 +377,8 @@
       '> LENGTH: ' + duration,
       '> PERMISSION: ' + (consent ? 'CONFIRMED' : 'AWAITING CONFIRMATION'),
       '',
-      previewError || (preview ? 'TAPE PREVIEW PLAYING · COMPLETE DETAILS TO SUBMIT_' : parsed ? 'SIGNAL READY · PRESS ENTER TO PLAY PREVIEW_' : 'PASTE A YOUTUBE LINK, THEN PRESS ENTER_')
+      ...(validationAttempted && validationErrors.length ? ['CHECK YOUR ENTRY:', ...validationErrors.map(error => '> ' + error)] : []),
+      previewError || (ready ? 'ENTRY READY · PRESS LOAD TAPE TO SUBMIT_' : preview ? 'TAPE PREVIEW PLAYING · COMPLETE DETAILS TO SUBMIT_' : parsed ? 'VIDEO LINK READY · ENTER PLAYS PREVIEW · LOAD TAPE CHECKS YOUR ENTRY_' : 'PASTE A YOUTUBE LINK, THEN PRESS ENTER_')
     ];
     const playPreview = event => {
       if (event.key !== 'Enter' || event.nativeEvent?.isComposing || busy) return;
@@ -380,7 +400,9 @@
       } catch (e) {}
     };
     const loadTape = async () => {
-      if (!ready || sending.current) return;
+      if (sending.current) return;
+      setValidationAttempted(true);
+      if (!ready) { setEditing(true); return; }
       sending.current = true; setBusy(true); setEditing(false);
       setTermLines(['> LOAD TAPE', 'TRANSMITTING TO JUDGING ROOM...', 'PLEASE WAIT_']);
       const payload = {contestId: contest.contestId, title: filmTitle.trim(), team: callsign.trim(), contactEmail: email.trim(), videoUrl: tape.trim(), durationSeconds, consent, website: ''};
@@ -397,6 +419,7 @@
         setActive(nextSlot.n); setFeedPage(Math.floor((nextSlot.n - 1) / PAGE_SIZE));
         setPreview(null); setPreviewError('');
         setTape(''); setCallsign(''); setEmail(''); setFilmTitle(''); setDuration(''); setConsent(false);
+        setValidationAttempted(false);
         pending.current = null;
         setTermLines(['> LOAD TAPE', 'TRANSMISSION ........ OK', 'FILM: ' + payload.title, 'CREW: ' + payload.team, '', '*** ENTRY RECEIVED ***', 'PENDING ORGANIZER REVIEW', 'RECEIPT: ' + result.receipt, '', 'DEMO ENTRY · NO EMAIL SENT', 'READY._']);
       } catch (error) {
@@ -893,6 +916,8 @@
     }, "EMAIL"), /*#__PURE__*/React.createElement("input", {
       value: email,
       "aria-label": "Contact email",
+      "aria-invalid": !!emailError && (!!email || validationAttempted),
+      "aria-describedby": "rg-email-help",
       disabled: busy,
       onChange: e => editField(setEmail, e.target.value),
       placeholder: "YOU@EMAIL.COM",
@@ -909,20 +934,20 @@
         padding: '6px 8px',
         outline: 'none'
       })
-    }))), React.createElement('div', {style: {display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 90px', gap: 6}},
+    }), React.createElement('span', {id: 'rg-email-help', style: lbl({whiteSpace: 'normal', color: '#802a1d', lineHeight: 1.5})}, (email || validationAttempted) ? emailError : ''))), React.createElement('div', {style: {display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 90px', gap: 6}},
       detailField('FILM TITLE', filmTitle, setFilmTitle, {placeholder: 'YOUR FILM', maxLength: 160}),
-      detailField('LENGTH · 3–10 MIN', duration, setDuration, {placeholder: 'MM:SS', maxLength: 5, 'aria-label': 'Film length in minutes and seconds'})
-    ), React.createElement('label', {style: {...lbl({fontSize: 8, whiteSpace: 'normal', lineHeight: 1.5}), display: 'flex', alignItems: 'flex-start', gap: 5}},
+      detailField('LENGTH · 3–10 MIN', duration, setDuration, {placeholder: '5min / 5:00', maxLength: 12, 'aria-label': 'Film length in minutes and seconds', 'aria-invalid': !!durationError && (!!duration || validationAttempted), 'aria-describedby': 'rg-duration-help'})
+    ), React.createElement('span', {id: 'rg-duration-help', style: lbl({whiteSpace: 'normal', color: durationError && (duration || validationAttempted) ? '#802a1d' : C.label, lineHeight: 1.5})}, durationError && (duration || validationAttempted) ? durationError : 'LENGTH: 5, 5min OR 5:00 · 3–10 MINUTES'), React.createElement('label', {style: {...lbl({fontSize: 8, whiteSpace: 'normal', lineHeight: 1.5}), display: 'flex', alignItems: 'flex-start', gap: 5}},
       React.createElement('input', {type: 'checkbox', checked: consent, disabled: busy, onChange: e => editField(setConsent, e.target.checked), style: {margin: 0, accentColor: C.ink}}),
       'I HAVE PERMISSION TO SUBMIT THIS FILM. THIS IS A DEMO ENTRY.'
     ), connectionError && React.createElement('div', {role: 'alert', style: lbl({whiteSpace: 'normal', color: '#802a1d'})}, connectionError,
       React.createElement(Key, {wide: true, onClick: connect}, 'RECONNECT')),
     contest && !contest.accepting && React.createElement('div', {role: 'status', style: lbl({whiteSpace: 'normal'})}, 'THIS ROUND IS CLOSED.'),
+    validationAttempted && (validationErrors.length > 0 || availabilityError) && React.createElement('div', {role: 'alert', style: lbl({whiteSpace: 'normal', color: '#802a1d', lineHeight: 1.5})}, [...validationErrors, availabilityError].filter(Boolean).join(' ')),
     /*#__PURE__*/React.createElement(Key, {
       wide: true,
-      dim: !ready,
       on: ready,
-      disabled: !ready,
+      disabled: busy,
       onClick: loadTape
     }, busy ? 'TRANSMITTING…' : '\u2b07 LOAD TAPE'), /*#__PURE__*/React.createElement("div", {
       style: {
