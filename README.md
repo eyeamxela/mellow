@@ -8,3 +8,5 @@ This repository contains two independently hosted parts:
 The public Vercel deployment includes **only `index.html` and `vercel.json`**. Backend code, database files, documents and legacy multi-page exports are excluded by `.vercelignore`. The older files remain in Git history/workspace for reference, and their public routes redirect to the new hash routes.
 
 Read [PUBLIC-RELEASE.md](PUBLIC-RELEASE.md) for the supplied site's provenance and preview changes. Shopify connection instructions live in the private judging repository. Integration credentials belong only on a trusted server, never in a theme or browser script.
+
+Rock Games now includes a connected demo submission form at `/#rockgames`, backed by the private Railway judging application. Public integration assets contain no credentials. The backend and presentation runbook live in the separate private `eyeamxela/mellow-rock-games` repository; they are not published here.

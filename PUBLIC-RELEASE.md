@@ -36,3 +36,9 @@ Older standalone HTML files remain in the repository as the original design-syst
 - The receipt disclosure, preview notice, removed password field, and both disabled checkout labels were checked in the packaged template.
 
 Browser rendering and deployed-route checks must be recorded by the release operator. This packaging step does not itself deploy the site or connect the existing submission frontend.
+
+## Connected Rock Games demo — October 13, 2026
+
+The bundled source layout now loads `rock-games-connect.js` and `rock-games-connect.css` before mounting the application. They replace the local-only entry console with a working YouTube-link submission form, connected to the existing private Railway judging service. The form collects a film title, team, contact email, link, declared duration, location and description, and displays a server receipt. It carries no privileged API credentials and sends no judging session cookies.
+
+The public preview banner and how-to-submit copy now identify the connected demo. Community voting and checkout remain previews. Shopify has not been changed. The Vercel upload allowlist is exactly four files: index.html, vercel.json, rock-games-connect.js, rock-games-connect.css. The nested private backend stays excluded from both this public Git repository and Vercel.
