@@ -58,6 +58,7 @@
   // Public, fictional demo metadata only. No applicant emails, scores or judge data.
   const DEMO_FILMS = ["Granite Afterglow", "Low Gravity", "The Quiet Send", "Moss and Motion", "A Different Beta", "Last Light Club", "Beyond the Crux", "Skin in the Game", "Weather Window", "Small Holds Big Dreams", "The Long Approach", "One More Burn", "Above the Pines", "Valley of Stone", "Rest Day Rebels", "Chalk Lines", "Pocket Universe", "Cold Rock Warm Hands", "The Good Friction", "Finding the Edge", "Evening Sessions", "The Unfinished Line", "Wild Exposure", "Softer Landings", "Through the Roof", "No Easy Way", "Dust and Daylight", "The Great Traverse", "Thin Air Stories", "Between Two Boulders", "Back to the Block", "Under the Overhang", "Trail to Tomorrow", "Project Season", "Friction Theory", "Rock Paper Patience", "The Send Forecast", "Campfire Beta", "Hands on Granite", "Against the Grain", "A Little Further", "Nightfall Sessions", "The Other Side", "Ridge Walkers", "Off the Ground", "Gravity Optional", "Waiting for Winter", "Open Air Cinema", "The Next Attempt", "Home Before Dark"];
   const PAGE_SIZE = 12;
+  const entryNumber = channel => String(channel.n).padStart(6, '0');
   const STORE = 'mellow-mrg-console-channels-v2';
   const VOTE = 'mellow-mrg-console-vote-v2';
   function loadChannels() {
@@ -306,7 +307,7 @@
     const [editing, setEditing] = React.useState(false);
     const [preview, setPreview] = React.useState(null);
     const playing = !!preview;
-    const playChannel = channel => setPreview(channel.src ? {source: channel.src, key: crypto.randomUUID(), label: channel.title || channel.callsign} : null);
+    const playChannel = channel => setPreview(channel.src ? {source: channel.src, key: crypto.randomUUID(), label: channel.title || entryNumber(channel)} : null);
     const [previewError, setPreviewError] = React.useState('');
     const editField = (setter, value) => { setEditing(true); setter(value); };
     const [callsign, setCallsign] = React.useState('');
@@ -533,7 +534,7 @@
       val: String(active).padStart(2, '0')
     }), /*#__PURE__*/React.createElement(Readout, {
       tag: "ENTRY",
-      val: ch.callsign || '\u2014\u2014\u2014',
+      val: ch.src ? entryNumber(ch) : '\u2014\u2014\u2014',
       color: C.crt
     }), /*#__PURE__*/React.createElement(Readout, {
       tag: "SIG",
@@ -664,7 +665,7 @@
     }, visibleChannels.map(c => /*#__PURE__*/React.createElement("button", {
       key: c.n,
       type: 'button',
-      'aria-label': 'Channel ' + c.n + (c.src ? ': ' + c.callsign + ' — ' + (c.title || 'Your tape') : ': Empty'),
+      'aria-label': 'Entry ' + entryNumber(c) + (c.src ? ': ' + (c.title || 'Your tape') : ': Empty'),
       'aria-pressed': c.n === active,
       title: c.demo ? c.title + ' · Fictional demo / shared sample footage' : c.title || 'Empty channel',
       onClick: () => {
@@ -694,7 +695,7 @@
         overflow: 'hidden',
         textOverflow: 'ellipsis'
       }
-    }, String(c.n).padStart(2, '0'), " ", c.callsign || '—',
+    }, entryNumber(c), c.src ? '' : ' —',
       c.title && React.createElement('span', {style: {display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', marginTop: 3, fontSize: 8, opacity: .8}}, c.title)), /*#__PURE__*/React.createElement("span", {
       style: {
         flexShrink: 0
