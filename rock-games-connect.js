@@ -417,7 +417,10 @@
         if (!response.ok) throw new Error(result.error || 'Your film was not received. Try again.');
         commit(channels.map(c => c.n === nextSlot.n ? {n: c.n, callsign: callsign.toUpperCase().slice(0, 12), title: filmTitle.trim(), src: parsed} : c));
         setActive(nextSlot.n); setFeedPage(Math.floor((nextSlot.n - 1) / PAGE_SIZE));
-        setPreview(null); setPreviewError('');
+        // The response arrives after the click gesture. Start muted so browsers
+        // allow autoplay, and retain the submitted film while clearing the form.
+        setPreview({source: {...parsed, embed: parsed.embed + '&mute=1&playsinline=1'}, key: crypto.randomUUID(), label: payload.title, mutedAutoplay: true});
+        setPreviewError('');
         setTape(''); setCallsign(''); setEmail(''); setFilmTitle(''); setDuration(''); setConsent(false);
         setValidationAttempted(false);
         pending.current = null;
@@ -802,6 +805,7 @@
       frameBorder: "0",
       allow: "autoplay; encrypted-media; fullscreen",
       allowFullScreen: true,
+      referrerPolicy: 'strict-origin-when-cross-origin',
       style: {
         width: '100%', height: '100%', border: 'none', display: 'block'
       }
@@ -829,7 +833,7 @@
       style: lbl({
         fontSize: 7
       })
-    }, preview ? 'PLAYING ON LOWER SCREEN' : parsed ? 'SIGNAL VERIFIED' : 'AWAITING SIGNAL'))), /*#__PURE__*/React.createElement("div", {
+    }, preview ? (preview.mutedAutoplay ? 'PLAYING ON LOWER SCREEN · UNMUTE IN PLAYER FOR SOUND' : 'PLAYING ON LOWER SCREEN') : parsed ? 'SIGNAL VERIFIED' : 'AWAITING SIGNAL'))), /*#__PURE__*/React.createElement("div", {
       style: {
         display: 'flex',
         flexDirection: 'column',
