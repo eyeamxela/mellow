@@ -347,6 +347,17 @@
         return null;
       }
     });
+    const [voteEmail, setVoteEmail] = React.useState('');
+    const [voteError, setVoteError] = React.useState('');
+    React.useEffect(() => {
+      const syncVote = event => {
+        if (event.key === VOTE && event.newValue) {
+          setVoted(event.newValue); setVoteEmail(''); setVoteError('');
+        }
+      };
+      window.addEventListener('storage', syncVote);
+      return () => window.removeEventListener('storage', syncVote);
+    }, []);
     const [clock, setClock] = React.useState('--:--:--');
     React.useEffect(() => {
       const t = setInterval(() => setClock(new Date().toISOString().slice(11, 19)), 1000);
@@ -444,10 +455,20 @@
     };
     const vote = () => {
       if (voted || !ch.src) return;
+      if (!/^[^\s@]+@[^\s@/]+\.[^\s@/]+$/.test(voteEmail.trim())) {
+        setVoteError('ENTER A VALID EMAIL TO VOTE.');
+        return;
+      }
       try {
+        const previous = localStorage.getItem(VOTE);
+        if (previous) { setVoted(previous); setVoteEmail(''); setVoteError(''); return; }
         localStorage.setItem(VOTE, String(ch.n));
-      } catch (e) {}
+      } catch (e) {
+        setVoteError('VOTE NOT SAVED. ENABLE BROWSER STORAGE AND TRY AGAIN.');
+        return;
+      }
       setVoted(String(ch.n));
+      setVoteEmail(''); setVoteError('');
     };
     // Independent background broadcast; applicant selection only changes the lower player.
     const screenBody = React.createElement('iframe', {
@@ -717,26 +738,27 @@
       React.createElement('span', {style: lbl({fontSize: 8})}, 'PAGE ' + (feedPage + 1) + ' / ' + pageCount),
       React.createElement(Key, {wide: true, disabled: feedPage === pageCount - 1, onClick: () => setFeedPage(p => p + 1)}, 'NEXT →')
     ), React.createElement('span', {style: lbl({fontSize: 7, whiteSpace: 'normal', lineHeight: 1.5})}, '50 FICTIONAL APPLICANTS · SHARED SAMPLE FOOTAGE'),
-    /*#__PURE__*/React.createElement("div", {
-      style: {
-        display: 'flex',
-        gap: 8,
-        alignItems: 'center',
-        justifyContent: 'space-between'
-      }
-    }, /*#__PURE__*/React.createElement(Key, {
-      wide: true,
-      dim: !ch.src || !!voted,
-      on: voted === String(active),
-      onClick: vote
-    }, voted === String(active) ? '● VOTED' : voted ? 'VOTE USED' : '● VOTE CH ' + String(active).padStart(2, '0')), /*#__PURE__*/React.createElement("span", {
-      style: lbl({
-        fontSize: 7,
-        minWidth: 0,
-        overflow: 'hidden',
-        textOverflow: 'ellipsis'
-      })
-    }, "\u25CF = YOUR VOTE \xB7 ONE PER TERMINAL"))))), /*#__PURE__*/React.createElement(Groove, null), /*#__PURE__*/React.createElement("div", {
+    React.createElement('div', {className: 'rg-vote-row', role: 'group', 'aria-label': 'Vote for an applicant'},
+      React.createElement('div', {className: 'rg-vote-terminal', style: {...bevelIn, background: C.screen, color: C.green, fontFamily: 'var(--font-mono)', padding: '9px 10px', minWidth: 0}},
+        React.createElement('div', {style: {fontSize: 8, letterSpacing: '.12em', marginBottom: 6}}, 'MRG / VOTE TERMINAL'),
+        React.createElement('div', {className: 'rg-vote-selection', style: {fontSize: 9, lineHeight: 1.5, overflowWrap: 'anywhere'}},
+          voted ? '> VOTE RECORDED · ' + String(voted).padStart(6, '0') : ch.src ? '> ' + entryNumber(ch) + ' · ' + (ch.title || 'Your tape') : '> SELECT A FILM IN THE FEED REGISTER'),
+        !voted && React.createElement('label', {style: {display: 'block', marginTop: 8}},
+          React.createElement('span', {style: {display: 'block', fontSize: 7, letterSpacing: '.1em', marginBottom: 4}}, 'EMAIL TO VOTE'),
+          React.createElement('input', {
+            type: 'email', value: voteEmail, maxLength: 254, autoComplete: 'email', spellCheck: false,
+            'aria-label': 'Email to vote', 'aria-invalid': !!voteError, 'aria-describedby': 'rg-vote-feedback',
+            placeholder: 'YOU@EMAIL.COM', disabled: !ch.src,
+            onChange: event => { setVoteEmail(event.target.value); setVoteError(''); },
+            onKeyDown: event => { if (event.key === 'Enter' && !event.nativeEvent?.isComposing) { event.preventDefault(); vote(); } },
+            style: {width: '100%', boxSizing: 'border-box', background: 'rgba(159,208,138,.07)', border: 0, borderBottom: '1px solid rgba(159,208,138,.45)', borderRadius: 0, color: C.green, fontFamily: 'var(--font-mono)', fontSize: 10, padding: '7px 5px', minWidth: 0}
+          })
+        ),
+        React.createElement('div', {id: 'rg-vote-feedback', role: voteError ? 'alert' : 'status', style: {fontSize: 7, lineHeight: 1.5, marginTop: 7, color: voteError ? C.amber : C.green}},
+          voteError || (voted ? 'THANK YOU. YOUR DEMO VOTE IS USED.' : 'SELECT A FILM · ENTER EMAIL · PRESS VOTE'))
+      ),
+      React.createElement(Key, {wide: true, on: !!voted, disabled: !!voted || !ch.src, onClick: vote}, voted ? 'VOTE USED' : '● VOTE')
+    ), React.createElement('span', {style: lbl({fontSize: 7, whiteSpace: 'normal', lineHeight: 1.5})}, '● = YOUR VOTE · ONE PER TERMINAL · DEMO VOTE')))), /*#__PURE__*/React.createElement(Groove, null), /*#__PURE__*/React.createElement("div", {
       "data-m": "console-row",
       style: {
         display: 'flex',
