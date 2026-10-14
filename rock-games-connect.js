@@ -299,6 +299,10 @@
     });
     const [playing, setPlaying] = React.useState(false);
     const [tape, setTape] = React.useState('');
+    const [editing, setEditing] = React.useState(false);
+    const [preview, setPreview] = React.useState(null);
+    const [previewError, setPreviewError] = React.useState('');
+    const editField = (setter, value) => { setEditing(true); setter(value); };
     const [callsign, setCallsign] = React.useState('');
     const [email, setEmail] = React.useState('');
     const [termLines, setTermLines] = React.useState(['MRG ENTRY TERMINAL v1.0', 'READY.', 'INSERT TAPE TO BEGIN_']);
@@ -338,9 +342,26 @@
     const durationMatch = duration.match(/^(\d{1,2}):([0-5]\d)$/);
     const durationSeconds = durationMatch ? Number(durationMatch[1]) * 60 + Number(durationMatch[2]) : 0;
     const ready = !!parsed && !!filmTitle.trim() && !!callsign.trim() && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()) && durationSeconds >= 180 && durationSeconds <= 600 && consent && !!contest?.accepting && !busy;
-    React.useEffect(() => {
-      if (parsed) setTermLines(['> SIGNAL DETECTED', 'SOURCE: ' + (parsed.type === 'youtube' ? 'YOUTUBE ' + parsed.id : parsed.type.toUpperCase()), 'NEXT SLOT: CH ' + (nextSlot ? String(nextSlot.n).padStart(2, '0') : 'NONE'), '', 'COMPLETE ENTRY DETAILS, THEN LOAD TAPE_']);
-    }, [tape]);
+    const liveLines = [
+      'MRG ENTRY TERMINAL v1.0',
+      '> YOUTUBE: ' + tape,
+      '> TEAM: ' + callsign,
+      '> EMAIL: ' + email,
+      '> FILM: ' + filmTitle,
+      '> LENGTH: ' + duration,
+      '> PERMISSION: ' + (consent ? 'CONFIRMED' : 'AWAITING CONFIRMATION'),
+      '',
+      previewError || (preview ? 'TAPE PREVIEW PLAYING · COMPLETE DETAILS TO SUBMIT_' : parsed ? 'SIGNAL READY · PRESS ENTER TO PLAY PREVIEW_' : 'PASTE A YOUTUBE LINK, THEN PRESS ENTER_')
+    ];
+    const playPreview = event => {
+      if (event.key !== 'Enter' || event.nativeEvent?.isComposing || busy) return;
+      event.preventDefault();
+      setEditing(true);
+      if (!parsed) { setPreview(null); setPreviewError('INVALID SIGNAL · ENTER A VALID YOUTUBE LINK_'); return; }
+      setPreviewError('');
+      // Remount on each Enter, including replaying the same link.
+      setPreview({source: parsed, key: crypto.randomUUID()});
+    };
     const filled = channels.filter(c => c.src);
     const commit = list => {
       setChannels(list);
@@ -350,7 +371,7 @@
     };
     const loadTape = async () => {
       if (!ready || sending.current) return;
-      sending.current = true; setBusy(true);
+      sending.current = true; setBusy(true); setEditing(false);
       setTermLines(['> LOAD TAPE', 'TRANSMITTING TO JUDGING ROOM...', 'PLEASE WAIT_']);
       const payload = {contestId: contest.contestId, title: filmTitle.trim(), team: callsign.trim(), contactEmail: email.trim(), videoUrl: tape.trim(), durationSeconds, consent, website: ''};
       const fingerprint = JSON.stringify(payload);
@@ -364,6 +385,7 @@
         if (!response.ok) throw new Error(result.error || 'Your film was not received. Try again.');
         commit(channels.map(c => c.n === nextSlot.n ? {n: c.n, callsign: callsign.toUpperCase().slice(0, 12), src: parsed} : c));
         setActive(nextSlot.n); setPlaying(false);
+        setPreview(null); setPreviewError('');
         setTape(''); setCallsign(''); setEmail(''); setFilmTitle(''); setDuration(''); setConsent(false);
         pending.current = null;
         setTermLines(['> LOAD TAPE', 'TRANSMISSION ........ OK', 'FILM: ' + payload.title, 'CREW: ' + payload.team, '', '*** ENTRY RECEIVED ***', 'PENDING ORGANIZER REVIEW', 'RECEIPT: ' + result.receipt, '', 'DEMO ENTRY · NO EMAIL SENT', 'READY._']);
@@ -374,7 +396,7 @@
     const fieldStyle = Object.assign({}, bevelIn, {width: '100%', boxSizing: 'border-box', background: C.screen, color: C.green, fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.06em', padding: '6px 8px'});
     const detailField = (label, value, change, props = {}) => React.createElement('label', {style: {display: 'flex', flexDirection: 'column', gap: 3, minWidth: 0}},
       React.createElement('span', {style: lbl({fontSize: 7})}, label),
-      React.createElement('input', {value, onChange: e => change(e.target.value), disabled: busy, style: fieldStyle, ...props}));
+      React.createElement('input', {value, onChange: e => editField(change, e.target.value), disabled: busy, style: fieldStyle, ...props}));
     const eject = () => {
       commit(channels.map(c => c.n === active ? {
         n: c.n,
@@ -762,28 +784,17 @@
         position: 'absolute',
         inset: 0
       }
-    }, parsed && parsed.type === 'file' && /*#__PURE__*/React.createElement("video", {
-      controls: true,
-      src: parsed.src,
-      style: {
-        width: '100%',
-        height: '100%',
-        objectFit: 'contain',
-        display: 'block'
-      }
-    }), parsed && parsed.type !== 'file' && /*#__PURE__*/React.createElement("iframe", {
-      src: parsed.embed.replace('?autoplay=1', ''),
+    }, preview && /*#__PURE__*/React.createElement("iframe", {
+      key: preview.key,
+      src: preview.source.embed,
       title: "tape preview",
       frameBorder: "0",
-      allow: "encrypted-media; fullscreen",
+      allow: "autoplay; encrypted-media; fullscreen",
       allowFullScreen: true,
       style: {
-        width: '100%',
-        height: '100%',
-        border: 'none',
-        display: 'block'
+        width: '100%', height: '100%', border: 'none', display: 'block'
       }
-    }), !parsed && /*#__PURE__*/React.createElement("span", {
+    }), !preview && /*#__PURE__*/React.createElement("span", {
       style: {
         position: 'absolute',
         inset: 0,
@@ -795,7 +806,7 @@
         letterSpacing: '0.3em',
         color: C.crt
       }
-    }, "PREVIEW")))), /*#__PURE__*/React.createElement("div", {
+    }, parsed ? "PRESS ENTER TO PLAY" : "PREVIEW")))), /*#__PURE__*/React.createElement("div", {
       style: {
         display: 'flex',
         gap: 5,
@@ -829,7 +840,8 @@
       value: tape,
       "aria-label": "YouTube link",
       disabled: busy,
-      onChange: e => setTape(e.target.value),
+      onChange: e => { editField(setTape, e.target.value); setPreview(null); setPreviewError(''); },
+      onKeyDown: playPreview,
       placeholder: "HTTPS://YOUTU.BE/\u2026",
       spellCheck: "false",
       style: Object.assign({}, bevelIn, {
@@ -864,7 +876,7 @@
       value: callsign,
       "aria-label": "Team or callsign",
       disabled: busy,
-      onChange: e => setCallsign(e.target.value),
+      onChange: e => editField(setCallsign, e.target.value),
       placeholder: "YOUR NAME",
       spellCheck: "false",
       maxLength: 120,
@@ -894,7 +906,7 @@
       value: email,
       "aria-label": "Contact email",
       disabled: busy,
-      onChange: e => setEmail(e.target.value),
+      onChange: e => editField(setEmail, e.target.value),
       placeholder: "YOU@EMAIL.COM",
       spellCheck: "false",
       type: "email",
@@ -913,7 +925,7 @@
       detailField('FILM TITLE', filmTitle, setFilmTitle, {placeholder: 'YOUR FILM', maxLength: 160}),
       detailField('LENGTH · 3–10 MIN', duration, setDuration, {placeholder: 'MM:SS', maxLength: 5, 'aria-label': 'Film length in minutes and seconds'})
     ), React.createElement('label', {style: {...lbl({fontSize: 8, whiteSpace: 'normal', lineHeight: 1.5}), display: 'flex', alignItems: 'flex-start', gap: 5}},
-      React.createElement('input', {type: 'checkbox', checked: consent, disabled: busy, onChange: e => setConsent(e.target.checked), style: {margin: 0, accentColor: C.ink}}),
+      React.createElement('input', {type: 'checkbox', checked: consent, disabled: busy, onChange: e => editField(setConsent, e.target.checked), style: {margin: 0, accentColor: C.ink}}),
       'I HAVE PERMISSION TO SUBMIT THIS FILM. THIS IS A DEMO ENTRY.'
     ), connectionError && React.createElement('div', {role: 'alert', style: lbl({whiteSpace: 'normal', color: '#802a1d'})}, connectionError,
       React.createElement(Key, {wide: true, onClick: connect}, 'RECONNECT')),
@@ -966,7 +978,7 @@
         whiteSpace: 'pre-wrap',
         wordBreak: 'break-all'
       }
-    }, (() => {
+    }, editing ? liveLines.join('\n') : (() => {
       let n = typed,
         out = [];
       for (const l of termLines) {
