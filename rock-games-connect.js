@@ -57,9 +57,9 @@
 
   function parseDuration(raw) {
     const value = raw.trim();
-    const clock = value.match(/^(\d{1,2}):([0-5]\d)$/);
+    const clock = value.match(/^(\d+):([0-5]\d)$/);
     if (clock) return Number(clock[1]) * 60 + Number(clock[2]);
-    const minutes = value.match(/^(\d{1,2})\s*(?:m|min|mins|minute|minutes)?$/i);
+    const minutes = value.match(/^(\d+)\s*(?:m|min|mins|minute|minutes)?$/i);
     return minutes ? Number(minutes[1]) * 60 : null;
   }
 
@@ -368,7 +368,7 @@
     const nextSlot = channels.find(c => !c.src) || channels[active - 1];
     const durationSeconds = parseDuration(duration);
     const emailError = /^[^\s@]+@[^\s@/]+\.[^\s@/]+$/.test(email.trim()) ? '' : 'Enter a valid email, such as you@example.com. Use a dot in the domain, not a slash.';
-    const durationError = durationSeconds === null ? 'Enter minutes (5 or 5min) or MM:SS (5:00).' : durationSeconds < 180 || durationSeconds > 600 ? 'Film length must be between 3:00 and 10:00.' : '';
+    const durationError = durationSeconds === null ? 'Enter minutes (5 or 5min) or MM:SS (5:00).' : !Number.isSafeInteger(durationSeconds) || durationSeconds <= 0 ? 'Enter a positive film length.' : '';
     const validationErrors = [
       !parsed && 'Add a valid YouTube link.',
       !callsign.trim() && 'Add your team or callsign.',
@@ -955,8 +955,8 @@
       })
     }), React.createElement('span', {id: 'rg-email-help', style: lbl({whiteSpace: 'normal', color: '#802a1d', lineHeight: 1.5})}, (email || validationAttempted) ? emailError : ''))), React.createElement('div', {style: {display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 90px', gap: 6}},
       detailField('FILM TITLE', filmTitle, setFilmTitle, {placeholder: 'YOUR FILM', maxLength: 160}),
-      detailField('LENGTH · 3–10 MIN', duration, setDuration, {placeholder: '5min / 5:00', maxLength: 12, 'aria-label': 'Film length in minutes and seconds', 'aria-invalid': !!durationError && (!!duration || validationAttempted), 'aria-describedby': 'rg-duration-help'})
-    ), React.createElement('span', {id: 'rg-duration-help', style: lbl({whiteSpace: 'normal', color: durationError && (duration || validationAttempted) ? '#802a1d' : C.label, lineHeight: 1.5})}, durationError && (duration || validationAttempted) ? durationError : 'LENGTH: 5, 5min OR 5:00 · 3–10 MINUTES'), React.createElement('label', {style: {...lbl({fontSize: 8, whiteSpace: 'normal', lineHeight: 1.5}), display: 'flex', alignItems: 'flex-start', gap: 5}},
+      detailField('FILM LENGTH', duration, setDuration, {placeholder: '5min / 5:00', maxLength: 12, 'aria-label': 'Film length in minutes and seconds', 'aria-invalid': !!durationError && (!!duration || validationAttempted), 'aria-describedby': 'rg-duration-help'})
+    ), React.createElement('span', {id: 'rg-duration-help', style: lbl({whiteSpace: 'normal', color: durationError && (duration || validationAttempted) ? '#802a1d' : C.label, lineHeight: 1.5})}, durationError && (duration || validationAttempted) ? durationError : 'LENGTH: 5, 5min OR 5:00 · ANY LENGTH'), React.createElement('label', {style: {...lbl({fontSize: 8, whiteSpace: 'normal', lineHeight: 1.5}), display: 'flex', alignItems: 'flex-start', gap: 5}},
       React.createElement('input', {type: 'checkbox', checked: consent, disabled: busy, onChange: e => editField(setConsent, e.target.checked), style: {margin: 0, accentColor: C.ink}}),
       'I HAVE PERMISSION TO SUBMIT THIS FILM. THIS IS A DEMO ENTRY.'
     ), connectionError && React.createElement('div', {role: 'alert', style: lbl({whiteSpace: 'normal', color: '#802a1d'})}, connectionError,
